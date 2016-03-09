@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="robots" content="noindex,nofollow"/>
+    <title>Чятик</title>
+    <style>
+    .demo {
+        width: 600px;
+        margin: 20px auto;
+        padding: 10px;
+        color: #4F6B72;
+        font-family: "PT Sans", Verdana, Arial, sans-serif;
+        font-size: 13px;
+    }
+    .chat .messages{
+        height: 300px;
+        border: 1px solid #d4d4d4;
+        overflow-y: scroll;
+        overflow-x: hidden;
+        padding: 5px;
+    }
+    .chat .messages .user{
+        color: #B22222;
+    }
+    .chat .message{
+        width: 70%;
+    }
+    .chat .panel{
+        margin-top: 8px;
+    }
+    #message_text{
+        width: 60%;
+        display: inline-block;
+        margin-left: 8px;
+    }
+    </style>
+</head>
+<body>
+<div class="demo">
+    <div class="chat">
+        <div class="messages" id="messages"></div>
+        <div class="panel">
+            <span class="nick"></span> <input type="text" name="message_text" id="message_text">
+            <input type="button" id="message_btn" value="Отправить"/>
+        </div>
+    </div>
+</div>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="http://localhost:8008/socket.io/socket.io.js"></script>
+<script type="text/javascript">
+    $(document).ready(function () {
+        var socket = io.connect('http://localhost:8008')
+          , name = 'Онанимус-' + (Math.round(Math.random() * 10000))
+          , messages = $('#messages')
+          , message_txt = $('#message_text')
+          , m = '';
+        $('.chat .nick').text(name);
+        socket.on('connecting', function () {
+            msg_system('Соединение...');
+        });
+        socket.on('connect', function () {
+            msg_system('Соединение установленно!');
+        });
+        socket.on('message', function (data) {
+            msg(data.name, data.message);
+            message_txt.focus();
+        });
+        $('#message_btn').click(submit);
+        $('#message_text').keyup(function(e) {
+            if (e.keyCode == 13)
+                submit();
+        });
+        function msg(nick, message) {
+            m = '<div class="msg">' +
+                '<span class="user">' + safe(nick) + ':</span> '
+                + safe(message) +
+                '</div>';
+            messages
+                    .append(m)
+                    .scrollTop(messages[0].scrollHeight);
+        }
+        function msg_system(message) {
+            m = '<div class="msg system">' + safe(message) + '</div>';
+            messages
+                    .append(m)
+                    .scrollTop(messages[0].scrollHeight);
+        }
+        function submit(){
+            m = $('#message_text').val().trim();
+            message_txt.val('');
+            if (m.length > 0)
+                socket.emit('message', {message: m, name: name});
+        }
+        function safe(str) {
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+    });
+</script>
+</body>
+</html>
